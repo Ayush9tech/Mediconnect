@@ -1,0 +1,816 @@
+{
+  "entities": {
+    "StoreUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StoreUser",
+      "type": "object",
+      "description": "Represents a user account within the Homeopathic Medical Store management system, with distinct roles and access permissions. Passwords and other authentication data are managed by an external system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StoreUser entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique username for login."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the store system (e.g., 'ADMIN', 'STAFF')."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity this user is associated with. (Relationship: Store 1:N StoreUser)"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Timestamp of the user's last login.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "firstName",
+        "lastName",
+        "role",
+        "storeId"
+      ]
+    },
+    "Store": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Store",
+      "type": "object",
+      "description": "Represents a physical store location, enabling multi-store support for inventory and sales management.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Store entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the store."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address of the store."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the store."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address for the store.",
+          "format": "email"
+        },
+        "gstin": {
+          "type": "string",
+          "description": "Goods and Services Tax Identification Number (GSTIN) for the store, used for billing."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "gstin"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category or type of homeopathic medicine (e.g., Mother Tincture, Dilution, Bio-Chemic).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the medicine category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Medicine": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Medicine",
+      "type": "object",
+      "description": "Represents a specific homeopathic medicine product, including its general details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Medicine entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the homeopathic medicine."
+        },
+        "company": {
+          "type": "string",
+          "description": "Manufacturing company of the medicine."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category entity this medicine belongs to. (Relationship: Category 1:N Medicine)"
+        },
+        "potency": {
+          "type": "string",
+          "description": "Potency of the medicine (e.g., 30C, 200C, 1M)."
+        },
+        "barcode": {
+          "type": "string",
+          "description": "Barcode associated with the medicine for quick scanning."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description or indications for the medicine."
+        },
+        "mrp": {
+          "type": "number",
+          "description": "Maximum Retail Price (MRP) of the medicine."
+        },
+        "hsnCode": {
+          "type": "string",
+          "description": "Harmonized System of Nomenclature (HSN) code for GST billing."
+        },
+        "gstRate": {
+          "type": "number",
+          "description": "Applicable Goods and Services Tax (GST) rate for the medicine as a percentage."
+        },
+        "reorderLevel": {
+          "type": "number",
+          "description": "The stock quantity at which a reorder alert should be triggered."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the medicine is currently active and available for sale."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "company",
+        "categoryId",
+        "potency",
+        "mrp",
+        "hsnCode",
+        "gstRate",
+        "reorderLevel",
+        "isActive"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier from whom medicines are purchased.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Supplier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Name of the primary contact person at the supplier."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the supplier.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the supplier."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address of the supplier."
+        },
+        "gstin": {
+          "type": "string",
+          "description": "Goods and Services Tax Identification Number (GSTIN) of the supplier."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contactPerson",
+        "email",
+        "phone",
+        "address",
+        "gstin"
+      ]
+    },
+    "Batch": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Batch",
+      "type": "object",
+      "description": "Represents a specific manufacturing batch of a medicine, crucial for tracking individual stock, expiry, and purchase details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Batch entity."
+        },
+        "medicineId": {
+          "type": "string",
+          "description": "Reference to the Medicine entity this batch belongs to. (Relationship: Medicine 1:N Batch)"
+        },
+        "batchNumber": {
+          "type": "string",
+          "description": "The unique batch number assigned by the manufacturer."
+        },
+        "manufacturingDate": {
+          "type": "string",
+          "description": "Date of manufacturing for this batch.",
+          "format": "date"
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "Expiry date for this batch of medicine.",
+          "format": "date"
+        },
+        "currentStock": {
+          "type": "number",
+          "description": "Current available quantity in stock for this specific batch."
+        },
+        "purchasePrice": {
+          "type": "number",
+          "description": "The unit purchase price for items in this batch."
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to the Supplier entity from whom this batch was purchased. (Relationship: Supplier 1:N Batch)"
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity where this batch is currently stocked. (Relationship: Store 1:N Batch)"
+        }
+      },
+      "required": [
+        "id",
+        "medicineId",
+        "batchNumber",
+        "manufacturingDate",
+        "expiryDate",
+        "currentStock",
+        "purchasePrice",
+        "supplierId",
+        "storeId"
+      ]
+    },
+    "PurchaseOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PurchaseOrder",
+      "type": "object",
+      "description": "Records an order placed with a supplier for the purchase of medicines.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PurchaseOrder entity."
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to the Supplier entity from whom the order was placed. (Relationship: Supplier 1:N PurchaseOrder)"
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "Date when the purchase order was created.",
+          "format": "date-time"
+        },
+        "expectedDeliveryDate": {
+          "type": "string",
+          "description": "Expected date of delivery for the ordered items.",
+          "format": "date"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total monetary amount of the purchase order."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the purchase order (e.g., 'PENDING', 'PARTIALLY_RECEIVED', 'COMPLETED', 'CANCELLED')."
+        },
+        "supplierInvoiceNumber": {
+          "type": "string",
+          "description": "The invoice number provided by the supplier for this order."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any additional notes or remarks about the purchase order."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity for which this purchase order was made. (Relationship: Store 1:N PurchaseOrder)"
+        },
+        "orderedByUserId": {
+          "type": "string",
+          "description": "Reference to the StoreUser who placed this purchase order. (Relationship: StoreUser 1:N PurchaseOrder)"
+        }
+      },
+      "required": [
+        "id",
+        "supplierId",
+        "orderDate",
+        "totalAmount",
+        "status",
+        "storeId",
+        "orderedByUserId"
+      ]
+    },
+    "PurchaseOrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PurchaseOrderItem",
+      "type": "object",
+      "description": "Represents a single line item within a PurchaseOrder, detailing a specific medicine and quantity ordered.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PurchaseOrderItem entity."
+        },
+        "purchaseOrderId": {
+          "type": "string",
+          "description": "Reference to the parent PurchaseOrder. (Relationship: PurchaseOrder 1:N PurchaseOrderItem)"
+        },
+        "medicineId": {
+          "type": "string",
+          "description": "Reference to the Medicine entity being ordered. (Relationship: Medicine 1:N PurchaseOrderItem)"
+        },
+        "batchId": {
+          "type": "string",
+          "description": "Reference to the Batch entity created or updated by this purchase item. (Relationship: Batch 1:N PurchaseOrderItem)"
+        },
+        "quantityOrdered": {
+          "type": "number",
+          "description": "Quantity of the medicine ordered."
+        },
+        "quantityReceived": {
+          "type": "number",
+          "description": "Quantity of the medicine actually received from the supplier."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit purchase price for this specific medicine item."
+        },
+        "gstRate": {
+          "type": "number",
+          "description": "Applicable GST rate for this item as a percentage."
+        },
+        "lineTotal": {
+          "type": "number",
+          "description": "Total monetary amount for this line item (quantity * unitPrice * (1 + gstRate))."
+        }
+      },
+      "required": [
+        "id",
+        "purchaseOrderId",
+        "medicineId",
+        "batchId",
+        "quantityOrdered",
+        "quantityReceived",
+        "unitPrice",
+        "gstRate",
+        "lineTotal"
+      ]
+    },
+    "SalesInvoice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SalesInvoice",
+      "type": "object",
+      "description": "Records a complete sales transaction with a customer, serving as an invoice.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SalesInvoice entity."
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Unique invoice number generated for this sale."
+        },
+        "invoiceDate": {
+          "type": "string",
+          "description": "Date and time when the invoice was generated.",
+          "format": "date-time"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Name of the customer (can be optional for anonymous sales)."
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Phone number of the customer."
+        },
+        "customerEmail": {
+          "type": "string",
+          "description": "Email address of the customer.",
+          "format": "email"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total monetary amount of the sales invoice, including GST."
+        },
+        "gstAmount": {
+          "type": "number",
+          "description": "Total GST amount applied to this invoice."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Method of payment used for this sale (e.g., 'CASH', 'CARD', 'UPI')."
+        },
+        "soldByUserId": {
+          "type": "string",
+          "description": "Reference to the StoreUser who processed this sale. (Relationship: StoreUser 1:N SalesInvoice)"
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity where this sale occurred. (Relationship: Store 1:N SalesInvoice)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the sales invoice (e.g., 'PAID', 'PENDING', 'REFUNDED')."
+        }
+      },
+      "required": [
+        "id",
+        "invoiceNumber",
+        "invoiceDate",
+        "totalAmount",
+        "gstAmount",
+        "paymentMethod",
+        "soldByUserId",
+        "storeId",
+        "status"
+      ]
+    },
+    "SalesInvoiceItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SalesInvoiceItem",
+      "type": "object",
+      "description": "Represents a single line item within a SalesInvoice, detailing a specific medicine and quantity sold.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SalesInvoiceItem entity."
+        },
+        "salesInvoiceId": {
+          "type": "string",
+          "description": "Reference to the parent SalesInvoice. (Relationship: SalesInvoice 1:N SalesInvoiceItem)"
+        },
+        "medicineId": {
+          "type": "string",
+          "description": "Reference to the Medicine entity being sold. (Relationship: Medicine 1:N SalesInvoiceItem)"
+        },
+        "batchId": {
+          "type": "string",
+          "description": "Reference to the specific Batch entity from which the medicine was sold. (Relationship: Batch 1:N SalesInvoiceItem)"
+        },
+        "quantitySold": {
+          "type": "number",
+          "description": "Quantity of the medicine sold."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit selling price for this specific medicine item at the time of sale."
+        },
+        "gstRate": {
+          "type": "number",
+          "description": "Applicable GST rate for this item at the time of sale as a percentage."
+        },
+        "lineTotal": {
+          "type": "number",
+          "description": "Total monetary amount for this line item (quantity * unitPrice * (1 + gstRate))."
+        }
+      },
+      "required": [
+        "id",
+        "salesInvoiceId",
+        "medicineId",
+        "batchId",
+        "quantitySold",
+        "unitPrice",
+        "gstRate",
+        "lineTotal"
+      ]
+    },
+    "StockTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StockTransaction",
+      "type": "object",
+      "description": "Records all movements of medicine stock, including stock-in, stock-out, and adjustments.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StockTransaction entity."
+        },
+        "batchId": {
+          "type": "string",
+          "description": "Reference to the Batch entity affected by this transaction. (Relationship: Batch 1:N StockTransaction)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of stock transaction (e.g., 'STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT', 'TRANSFER_IN', 'TRANSFER_OUT')."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of medicine involved in this transaction. Positive for STOCK_IN, negative for STOCK_OUT."
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "Date and time when the stock transaction occurred.",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for the stock transaction (e.g., 'Purchase', 'Sale', 'Damage', 'Return', 'Inventory Correction')."
+        },
+        "processedByUserId": {
+          "type": "string",
+          "description": "Reference to the StoreUser who processed this stock transaction. (Relationship: StoreUser 1:N StockTransaction)"
+        },
+        "relatedEntityId": {
+          "type": "string",
+          "description": "Optional: Reference to a related entity like PurchaseOrder or SalesInvoice for traceability. This could be either a PurchaseOrderId or a SalesInvoiceId depending on the transaction type."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity where this transaction took place. (Relationship: Store 1:N StockTransaction)"
+        }
+      },
+      "required": [
+        "id",
+        "batchId",
+        "type",
+        "quantity",
+        "transactionDate",
+        "reason",
+        "processedByUserId",
+        "storeId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/system_admins/{userId}",
+        "definition": {
+          "entityName": "StoreUser",
+          "schema": {
+            "$ref": "#/backend/entities/StoreUser"
+          },
+          "description": "A top-level collection to identify system-wide administrators. The existence of a document at this path for a given userId grants global administrative privileges. No full user profile stored here, just the ID as a marker for existence checks in rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the StoreUser who is a system administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/store_users/{userId}",
+        "definition": {
+          "entityName": "StoreUser",
+          "schema": {
+            "$ref": "#/backend/entities/StoreUser"
+          },
+          "description": "Stores user profiles including their role and the specific store they are associated with. This data is critical for authorization decisions and is denormalized to allow direct access by `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the StoreUser (corresponds to Firebase Auth UID)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}",
+        "definition": {
+          "entityName": "Store",
+          "schema": {
+            "$ref": "#/backend/entities/Store"
+          },
+          "description": "Main collection for each physical store location. All store-specific data is either nested under this path or directly references `storeId`.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier for a specific store."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "A global master collection for medicine categories. This data is shared across all stores and is generally read-only for staff, with write access for store/system admins.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for a medicine category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/medicines/{medicineId}",
+        "definition": {
+          "entityName": "Medicine",
+          "schema": {
+            "$ref": "#/backend/entities/Medicine"
+          },
+          "description": "A global master collection for homeopathic medicine details. This is a shared product catalog, accessible to all stores for reference. Includes denormalized 'categoryId' for querying, but not direct authorization.",
+          "params": [
+            {
+              "name": "medicineId",
+              "description": "The unique identifier for a specific medicine product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "A subcollection under each store, containing suppliers managed by or associated with that specific store. This ensures authorization independence as 'storeId' is implicitly derived from the path.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store managing this supplier."
+            },
+            {
+              "name": "supplierId",
+              "description": "The unique identifier for a supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/batches/{batchId}",
+        "definition": {
+          "entityName": "Batch",
+          "schema": {
+            "$ref": "#/backend/entities/Batch"
+          },
+          "description": "A subcollection under each store, detailing specific manufacturing batches of medicines currently in stock at that store. Includes denormalized 'storeId', 'medicineId', and 'supplierId' for direct authorization and efficient queries.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store where this batch is stocked."
+            },
+            {
+              "name": "batchId",
+              "description": "The unique identifier for a specific medicine batch."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/purchaseOrders/{purchaseOrderId}",
+        "definition": {
+          "entityName": "PurchaseOrder",
+          "schema": {
+            "$ref": "#/backend/entities/PurchaseOrder"
+          },
+          "description": "A subcollection under each store, recording purchase orders made by that specific store. Includes denormalized 'storeId', 'supplierId', and 'orderedByUserId' for direct authorization and efficient queries.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store that placed the purchase order."
+            },
+            {
+              "name": "purchaseOrderId",
+              "description": "The unique identifier for a purchase order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/purchaseOrders/{purchaseOrderId}/items/{purchaseOrderItemId}",
+        "definition": {
+          "entityName": "PurchaseOrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/PurchaseOrderItem"
+          },
+          "description": "A subcollection under a specific PurchaseOrder, detailing each medicine line item within that order. Authorization is handled implicitly via the parent PurchaseOrder's 'storeId' in the path.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store associated with the parent purchase order."
+            },
+            {
+              "name": "purchaseOrderId",
+              "description": "The unique identifier of the parent purchase order."
+            },
+            {
+              "name": "purchaseOrderItemId",
+              "description": "The unique identifier for a line item within a purchase order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/salesInvoices/{salesInvoiceId}",
+        "definition": {
+          "entityName": "SalesInvoice",
+          "schema": {
+            "$ref": "#/backend/entities/SalesInvoice"
+          },
+          "description": "A subcollection under each store, recording sales transactions for that specific store. Includes denormalized 'storeId' and 'soldByUserId' for direct authorization and efficient queries.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store where the sale occurred."
+            },
+            {
+              "name": "salesInvoiceId",
+              "description": "The unique identifier for a sales invoice."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/salesInvoices/{salesInvoiceId}/items/{salesInvoiceItemId}",
+        "definition": {
+          "entityName": "SalesInvoiceItem",
+          "schema": {
+            "$ref": "#/backend/entities/SalesInvoiceItem"
+          },
+          "description": "A subcollection under a specific SalesInvoice, detailing each medicine line item sold. Authorization is handled implicitly via the parent SalesInvoice's 'storeId' in the path.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store associated with the parent sales invoice."
+            },
+            {
+              "name": "salesInvoiceId",
+              "description": "The unique identifier of the parent sales invoice."
+            },
+            {
+              "name": "salesInvoiceItemId",
+              "description": "The unique identifier for a line item within a sales invoice."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/stockTransactions/{stockTransactionId}",
+        "definition": {
+          "entityName": "StockTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/StockTransaction"
+          },
+          "description": "A subcollection under each store, logging all stock movements (in/out/adjustments) for that store. Includes denormalized 'storeId', 'batchId', and 'processedByUserId' for direct authorization and efficient queries.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store where the stock transaction occurred."
+            },
+            {
+              "name": "stockTransactionId",
+              "description": "The unique identifier for a stock transaction record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for the Homeopathic Medical Store Medicine Management System is designed around the core principles of Authorization Independence, Structural Segregation, and Access Modeling to ensure security, scalability, and debuggability. The system supports multi-store operations with role-based access.\n\n**Authorization Independence (CRITICAL) & Denormalization Strategy:**\nTo eliminate hierarchical authorization dependencies and avoid the use of `get()` operations in security rules for accessing parent document data, authorization context is denormalized where necessary:\n1.  **Store Scoping:** Almost all transactional and store-specific master data (Suppliers, Batches, Purchase Orders, Sales Invoices, Stock Transactions) are explicitly scoped to a specific store.\n    *   For entities like `Supplier`, which initially lacked a `storeId` in its schema, it is designed as a subcollection (`/stores/{storeId}/suppliers/{supplierId}`). This implicitly includes the `storeId` in its path, making its security independent of a parent `Supplier` document. This also applies to `PurchaseOrderItem` and `SalesInvoiceItem` which are subcollections of their respective parent orders/invoices.\n    *   For entities like `StoreUser`, `Batch`, `PurchaseOrder`, `SalesInvoice`, and `StockTransaction`, the `storeId` field is already part of their schema. This allows security rules to directly reference `resource.data.storeId` or match `storeId` from the path, comparing it against the authenticated user's assigned `storeId` (from their `/store_users/{userId}` profile) without needing a `get()` call to a parent collection.\n2.  **User Roles & Association:** The `StoreUser` entity explicitly contains `storeId` and `role`. This denormalized information allows security rules to fetch the user's profile once (`get(/databases/$(database)/documents/store_users/$(request.auth.uid))`) and then use their `storeId` and `role` to authorize actions on any document within that store's scope. This single `get()` for the user's *own* profile is acceptable as it doesn't depend on the target resource's parent data.\n\n**QAPs (Rules are not Filters):**\nThe structure ensures Queryable Access Patterns by:\n1.  **Structural Segregation:** Data with different security postures is segregated into distinct collections or subcollections. For instance:\n    *   **Global Master Data:** `categories` and `medicines` are top-level collections, implying they are read-only for most authenticated users (all staff/admin) and only writable by system administrators or store admins with specific permissions. This allows for simple `list` operations without filtering in rules.\n    *   **Store-Specific Data:** All operational data (`suppliers`, `batches`, `purchaseOrders`, `salesInvoices`, `stockTransactions`) are either direct subcollections of `/stores/{storeId}/` or contain `storeId` as a top-level field. This means `list` operations on these collections inherently retrieve only data belonging to a specific store (via the `storeId` in the path or as a query parameter `where('storeId', '==', storeId)`). Security rules can then enforce that the `storeId` in the path/query matches the authenticated user's assigned `storeId`, enabling secure and efficient queries.\n2.  **Explicit Ownership/Association:** Fields like `orderedByUserId`, `soldByUserId`, and `processedByUserId` allow for individual users to query for records they've created or processed within their assigned store, further supporting QAPs by allowing efficient filtering based on user ID directly on the document without complex rule logic.\n\n**DBAC Implementation:**\nUser roles (`ADMIN`, `STAFF`) are stored within the `StoreUser` document itself, and a dedicated `/system_admins/{userId}` collection is used for global system administration roles. Authorization rules will check `request.auth.uid` against these stored roles and associated `storeId` to grant permissions."
+  }
+}

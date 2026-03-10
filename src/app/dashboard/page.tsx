@@ -1,0 +1,261 @@
+
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { MediMenuBar } from "@/components/layout/MediMenuBar";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Users, Share2, Calendar as CalendarIcon, ArrowUpRight, CheckCircle2, User } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useUser } from "@/firebase/provider";
+import { getDoctorProfile } from "@/lib/auth";
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user } = useUser();
+  const [doctorName, setDoctorName] = useState("Doctor");
+  const [profileComplete, setProfileComplete] = useState(false);
+  const [letterCount, setLetterCount] = useState(0);
+  const [patientCount, setPatientCount] = useState(0);
+  const [sharedCount, setSharedCount] = useState(0);
+  const [activities, setActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      getDoctorProfile(user.uid).then(profile => {
+        if (profile) {
+          setDoctorName(profile.name);
+          setProfileComplete(profile.profileComplete || false);
+          setLetterCount(profile.letterCount || 0);
+          setPatientCount(profile.patientCount || 0);
+          setSharedCount(profile.sharedCount || 0);
+          setActivities(profile.activities || []);
+        }
+      }).catch(error => {
+        console.error("Error loading doctor profile in dashboard:", error);
+        // Try to get from localStorage as fallback
+        const STORAGE_KEY = 'mediconnect_doctor_profiles';
+        const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const localProfile = profiles[user.uid];
+        if (localProfile) {
+          setDoctorName(localProfile.name);
+          setProfileComplete(localProfile.profileComplete || false);
+          setLetterCount(localProfile.letterCount || 0);
+          setPatientCount(localProfile.patientCount || 0);
+          setSharedCount(localProfile.sharedCount || 0);
+          setActivities(localProfile.activities || []);
+        }
+      });
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute>
+      <div className="min-h-screen flex flex-col bg-background">
+        <MediMenuBar />
+        <main className="flex-1 p-3 md:p-4 lg:p-6 max-w-7xl mx-auto w-full space-y-4 -mt-2">
+          {/* Profile Completion Banner */}
+          {!profileComplete && (
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-full">
+                      <User className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-amber-800">Complete Your Profile</h3>
+                      <p className="text-sm text-amber-700">Add your professional details to personalize your MediConnect experience.</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => router.push("/settings")}
+                    className="bg-amber-600 hover:bg-amber-700"
+                  >
+                    Complete Profile
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <h2 className="text-lg md:text-xl font-headline font-bold text-primary leading-tight">Welcome back, {doctorName}</h2>
+              <p className="text-[9px] md:text-[10px] text-muted-foreground leading-tight">Here is what's happening in your clinic today.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button asChild className="bg-primary hover:bg-primary/90 shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">
+                <Link href="/letters/new">New Letter</Link>
+              </Button>
+              <Button variant="outline" className="shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">Schedule Follow-up</Button>
+            </div>
+          </div>
+
+        {/* Liquid Glass Stats Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard 
+            title="My Letters" 
+            value={letterCount.toString()} 
+            icon={FileText} 
+            trend={letterCount === 0 ? "Create your first letter" : `+${Math.floor(Math.random() * 4) + 1} this week`} 
+            onClick={() => router.push("/letters")}
+          />
+          <StatCard 
+            title="Patients" 
+            value={patientCount.toString()} 
+            icon={Users} 
+            trend={patientCount === 0 ? "Add your first patient" : `+${Math.floor(Math.random() * 12) + 1} this month`} 
+            onClick={() => router.push("/patients")}
+          />
+          <StatCard 
+            title="Received" 
+            value={sharedCount.toString()} 
+            icon={Share2} 
+            trend={sharedCount === 0 ? "No new alerts" : `${sharedCount} new alerts`} 
+            onClick={() => router.push("/shared/inbox")}
+          />
+          <StatCard 
+            title="Next Appointment" 
+            value={patientCount > 0 ? "2:30 PM" : "N/A"} 
+            icon={CalendarIcon} 
+            trend={patientCount > 0 ? "Alice Thompson" : "No appointments"} 
+            onClick={() => router.push("/calendar")}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="shadow-sm border-none ring-1 ring-border overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between bg-muted/10 p-4">
+                <CardTitle className="font-headline text-lg md:text-xl">Pending Tasks</CardTitle>
+                <Button variant="ghost" size="sm" className="text-accent font-bold text-[10px] md:text-xs hover:bg-accent/10" onClick={() => router.push("/letters")}>VIEW ALL</Button>
+              </CardHeader>
+              <CardContent className="p-2 md:p-6">
+                <div className="space-y-1">
+                  {[
+                    { id: 1, title: "Finalize Referral for John Doe", sub: "Drafted 2 days ago • High Priority" },
+                    { id: 2, title: "Approve Consultation for Sarah Smith", sub: "Pending since yesterday" },
+                    { id: 3, title: "Update Medical History - Michael Chen", sub: "Clinical note required" }
+                  ].map(task => (
+                    <div 
+                      key={task.id} 
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
+                      onClick={() => router.push("/letters/new")}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors">{task.title}</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground">{task.sub}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="secondary" className="hidden sm:flex group-hover:bg-primary group-hover:text-white transition-all shadow-sm">Resume</Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <QuickLink title="Consultation Templates" description="Manage your library of letter drafts." icon={FileText} href="/templates" />
+               <QuickLink title="Doctor Directory" description="Find specialists and share records." icon={Users} href="/directory" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <RecentActivity />
+            <Card className="bg-accent/5 border-accent/20 shadow-sm overflow-hidden border-none ring-1 ring-accent/20 group transition-all duration-300">
+              <CardHeader className="bg-accent/10 py-3 cursor-help">
+                <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-accent flex items-center gap-2">
+                  <ArrowUpRight className="h-4 w-4" />
+                  Upcoming Follow-ups
+                  <span className="ml-auto text-[8px] opacity-40 group-hover:opacity-0 transition-opacity italic tracking-normal">(Hover to view)</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4 px-4 pb-4 hidden group-hover:block animate-in fade-in slide-in-from-top-1 duration-200">
+                 <div className="flex justify-between items-center text-sm p-3 hover:bg-white rounded-md cursor-pointer transition-all group/item shadow-sm bg-card/50" onClick={() => router.push("/calendar")}>
+                    <span className="font-semibold group-hover/item:text-accent">Sarah Miller</span>
+                    <Badge variant="outline" className="text-[10px] bg-white border-accent/20">Tomorrow</Badge>
+                 </div>
+                 <div className="flex justify-between items-center text-sm p-3 hover:bg-white rounded-md cursor-pointer transition-all group/item shadow-sm bg-card/50" onClick={() => router.push("/calendar")}>
+                    <span className="font-semibold group-hover/item:text-accent">Kevin Baker</span>
+                    <Badge variant="outline" className="text-[10px] bg-white border-accent/20">Friday</Badge>
+                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+    </ProtectedRoute>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, trend, highlight, onClick }: any) {
+  return (
+    <div 
+      className={cn(
+        "relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group h-14 rounded-xl overflow-hidden flex items-center px-4",
+        "bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]",
+        "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/40 before:to-transparent before:opacity-0 hover:before:opacity-100 transition-opacity",
+        highlight ? "ring-2 ring-accent/50 bg-accent/10" : "hover:border-primary/30"
+      )} 
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between w-full gap-3 relative z-10">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="p-2 rounded-lg bg-primary/20 text-primary group-hover:scale-110 transition-transform shadow-inner shrink-0">
+            <Icon className="h-4 w-4" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <p className="text-sm font-black font-headline leading-none truncate text-primary/90">{value}</p>
+            <h3 className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1 truncate">{title}</h3>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <span className="text-[9px] text-primary/60 font-black uppercase tracking-tighter bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10 transition-all group-hover:bg-primary group-hover:text-white group-hover:border-primary">
+            {trend}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickLink({ title, description, icon: Icon, href }: any) {
+  return (
+    <Link href={href} className="block h-full">
+      <div 
+        className={cn(
+          "relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group h-16 rounded-xl overflow-hidden flex items-center px-4",
+          "bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/40 before:to-transparent before:opacity-0 hover:before:opacity-100 transition-opacity",
+          "hover:border-primary/30"
+        )}
+      >
+        <div className="flex items-center justify-between w-full gap-3 relative z-10">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="p-2.5 rounded-lg bg-primary/20 text-primary group-hover:scale-110 transition-transform shadow-inner shrink-0">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <h3 className="text-sm font-black font-headline leading-none truncate text-primary/90">{title}</h3>
+              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-tight mt-1 truncate">{description}</p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="p-1 rounded-full bg-primary/5 text-primary/40 group-hover:text-primary group-hover:bg-primary/10 transition-all">
+              <ArrowUpRight className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
