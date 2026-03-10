@@ -153,14 +153,14 @@ const IqbalTemplate = ({ content, setContent, textColor, lang }: any) => {
   }, [content]);
 
   return (
-    <div className="bg-white shadow-2xl mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
+    <div className="bg-white mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
       <style>{`
         ${templateCommonStyles}
         .iqbal-template { --primary-light: #159895; --primary-dark: #0A3641; display: flex; flex-direction: column; flex-grow: 1; }
         .decor-top { height: 35px; display: flex; width: 100%; background: #ffffff; gap: 12px; }
         .skew-top { transform: skewX(-35deg); height: 100%; }
-        .bg-dark { background-color: #0A3641; }
-        .bg-light { background-color: #159895; }
+        .skew-top.bg-dark { background-color: #0A3641; }
+        .skew-top.bg-light { background-color: #159895; }
         .header-content { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px 15px 40px; }
         .h-title { color: #0A3641; font-size: 26px; font-weight: 800; margin: 0; text-transform: uppercase; }
         .h-subtitle { color: #666666; font-size: 13px; letter-spacing: 1px; margin: 5px 0; text-transform: uppercase; }
@@ -276,7 +276,7 @@ const IqbalDarkTemplate = ({ content, setContent, textColor, lang }: any) => {
   }, [content]);
 
   return (
-    <div className="bg-white shadow-2xl mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col md:flex-row" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
+    <div className="bg-white mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col md:flex-row" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
       <style>{`
         ${templateCommonStyles}
         .sidebar { width: 100%; background: #0A3641; color: white; padding: 30px 25px; display: flex; flex-direction: column; }
@@ -363,7 +363,7 @@ const IqbalModernTemplate = ({ content, setContent, textColor, lang }: any) => {
   }, [content]);
 
   return (
-    <div className="bg-white shadow-2xl mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] p-8 flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
+    <div className="bg-white mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] p-8 flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
       <style>{`
         ${templateCommonStyles}
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
@@ -450,7 +450,7 @@ const IqbalHospitalTemplate = ({ content, setContent, textColor, lang }: any) =>
   }, [content]);
 
   return (
-    <div className="bg-white shadow-2xl mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
+    <div className="bg-white mx-auto overflow-hidden print:shadow-none print:m-0 w-full max-w-[210mm] min-h-[297mm] flex flex-col" style={{ fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif" }}>
       <style>{`
         ${templateCommonStyles}
         .hero { background: #eff7f7; padding: 30px 40px; border-bottom: 4px solid #fe5d5d; }
@@ -530,6 +530,8 @@ export default function NewLetterPage() {
   const [language, setLanguage] = useState("en");
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -543,6 +545,24 @@ export default function NewLetterPage() {
     return () => document.removeEventListener('selectionchange', updateFormatState);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const availableWidth = containerRef.current.clientWidth;
+        const letterWidth = 794; // approx px for 210mm at 96dpi
+        if (availableWidth < letterWidth) {
+          setScale(availableWidth / letterWidth);
+        } else {
+          setScale(1);
+        }
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const handlePrint = () => { window.print(); };
 
   const handleSave = () => {
@@ -554,13 +574,12 @@ export default function NewLetterPage() {
 
   const applyFormatting = (command: string, value?: string) => {
     document.execCommand(command, false, value);
-    // Force immediate re-check of states
     setIsBold(document.queryCommandState('bold'));
     setIsItalic(document.queryCommandState('italic'));
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background print:bg-white">
+    <div className="min-h-screen flex flex-col bg-background print:bg-white overflow-x-hidden">
       <style jsx global>{`
         @media print {
           @page { size: A4; margin: 0; }
@@ -573,15 +592,15 @@ export default function NewLetterPage() {
       `}</style>
       
       <div className="print:hidden"><MediMenuBar /></div>
-      <div className="bg-card border-b shadow-sm sticky top-[65px] z-40 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-           <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
-             <Button variant="ghost" size="icon" asChild><Link href="/dashboard"><ChevronLeft className="h-5 w-5" /></Link></Button>
+      <div className="bg-card border-b shadow-sm sticky top-[53px] md:top-[65px] z-40 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 py-2 md:py-3 flex flex-wrap items-center justify-between gap-2">
+           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+             <Button variant="ghost" size="icon" className="h-8 w-8" asChild><Link href="/dashboard"><ChevronLeft className="h-4 w-4" /></Link></Button>
              <div className="flex flex-col">
-               <h1 className="text-sm sm:text-lg font-headline font-bold text-primary truncate">Clinical Editor</h1>
+               <h1 className="text-xs md:text-lg font-headline font-bold text-primary truncate max-w-[120px] md:max-w-none">Clinical Editor</h1>
                <div className="flex items-center gap-2 mt-0.5">
                  <Select value={template} onValueChange={setTemplate}>
-                   <SelectTrigger className="h-6 w-auto max-w-[120px] sm:max-w-[200px] text-[10px] uppercase font-bold tracking-wider border-none bg-transparent p-0"><SelectValue /></SelectTrigger>
+                   <SelectTrigger className="h-5 md:h-6 w-auto max-w-[100px] md:max-w-[200px] text-[8px] md:text-[10px] uppercase font-bold tracking-wider border-none bg-transparent p-0"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="iqbal">Geometric Original</SelectItem>
                      <SelectItem value="iqbal-dark">Dark Sidebar Edition</SelectItem>
@@ -593,22 +612,22 @@ export default function NewLetterPage() {
                  <Button 
                    variant="ghost" 
                    size="sm" 
-                   className="h-6 px-1.5 flex items-center gap-1 hover:bg-primary/10" 
+                   className="h-5 md:h-6 px-1 flex items-center gap-1 hover:bg-primary/10" 
                    onMouseDown={(e) => { e.preventDefault(); setLanguage(l => l === 'en' ? 'hi' : 'en'); }}
                  >
                    <Languages className="h-3 w-3 text-primary" />
-                   <span className="text-[10px] font-black uppercase tracking-widest">{language === 'en' ? 'EN' : 'HI'}</span>
+                   <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">{language === 'en' ? 'EN' : 'HI'}</span>
                  </Button>
                </div>
              </div>
            </div>
 
-           <div className="flex items-center gap-1.5 sm:gap-3">
+           <div className="flex items-center gap-1 md:gap-2">
              <div className="flex items-center bg-muted/30 rounded-md p-0.5">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className={cn("h-7 w-7 sm:h-8 sm:w-8", isBold && "bg-primary/10 border border-primary/30 shadow-inner")} 
+                  className={cn("h-7 w-7", isBold && "bg-primary/10 border border-primary/30 shadow-inner")} 
                   onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }}
                 >
                   <Bold className={cn("h-3.5 w-3.5", isBold && "text-primary")} />
@@ -616,7 +635,7 @@ export default function NewLetterPage() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className={cn("h-7 w-7 sm:h-8 sm:w-8", isItalic && "bg-primary/10 border border-primary/30 shadow-inner")} 
+                  className={cn("h-7 w-7", isItalic && "bg-primary/10 border border-primary/30 shadow-inner")} 
                   onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }}
                 >
                   <Italic className={cn("h-3.5 w-3.5", isItalic && "text-primary")} />
@@ -624,7 +643,7 @@ export default function NewLetterPage() {
              </div>
              
              <Select onValueChange={(val) => applyFormatting('fontSize', val)}>
-               <SelectTrigger className="h-7 w-[60px] sm:w-[80px] text-[10px] font-bold border-none bg-muted/50 hidden xs:flex"><SelectValue placeholder="Size" /></SelectTrigger>
+               <SelectTrigger className="h-7 w-[50px] md:w-[80px] text-[10px] font-bold border-none bg-muted/50 flex"><SelectValue placeholder="Size" /></SelectTrigger>
                <SelectContent>{FONT_SIZES.map(size => (<SelectItem key={size.value} value={size.value}>{size.name}</SelectItem>))}</SelectContent>
              </Select>
 
@@ -633,27 +652,39 @@ export default function NewLetterPage() {
                <PopoverContent className="w-40 p-2" align="start"><div className="grid grid-cols-3 gap-2">{COLOR_PRESETS.map((color) => (<button key={color.value} className={cn("h-8 w-8 rounded-md border border-border", textColor === color.value && "ring-2 ring-primary ring-offset-1")} style={{ backgroundColor: color.value }} onMouseDown={(e) => { e.preventDefault(); setTextColor(color.value); applyFormatting('foreColor', color.value); }} />))}</div></PopoverContent>
              </Popover>
 
-             <Separator orientation="vertical" className="h-6 hidden sm:block" />
-             <Button size="sm" variant="default" className="h-8 sm:h-9 text-xs bg-primary hover:bg-primary/90 shadow-sm" onMouseDown={(e) => { e.preventDefault(); handleSave(); }}><Save className="mr-1.5 h-3.5 w-3.5" /> Save</Button>
-             <Button size="sm" variant="outline" className="h-8 sm:h-9 text-xs border-primary text-primary hover:bg-primary/5" onMouseDown={(e) => { e.preventDefault(); handlePrint(); }}><Printer className="mr-1.5 h-3.5 w-3.5" /> Print</Button>
+             <div className="flex gap-1">
+               <Button size="sm" variant="default" className="h-8 text-[10px] md:text-xs bg-primary hover:bg-primary/90 shadow-sm px-2 md:px-3" onMouseDown={(e) => { e.preventDefault(); handleSave(); }}><Save className="mr-1 h-3.5 w-3.5" /> Save</Button>
+               <Button size="sm" variant="outline" className="h-8 text-[10px] md:text-xs border-primary text-primary hover:bg-primary/5 px-2 md:px-3" onMouseDown={(e) => { e.preventDefault(); handlePrint(); }}><Printer className="mr-1 h-3.5 w-3.5" /> Print</Button>
+             </div>
            </div>
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 space-y-6 flex flex-col items-center">
-          <div className="w-full transform transition-all duration-300">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-3 md:p-6 grid grid-cols-12 gap-4 md:gap-6">
+        <div 
+          ref={containerRef} 
+          className="col-span-12 lg:col-span-8 flex flex-col items-center w-full overflow-hidden"
+          style={{ height: scale < 1 ? `calc(297mm * ${scale} + 40px)` : 'auto' }}
+        >
+          <div 
+            className="origin-top shadow-xl ring-1 ring-border rounded-lg overflow-hidden bg-white shrink-0"
+            style={{ 
+              width: '210mm', 
+              height: '297mm',
+              transform: `scale(${scale})`,
+            }}
+          >
             {template === "iqbal" && <IqbalTemplate content={content} setContent={setContent} textColor={textColor} lang={language} />}
             {template === "iqbal-dark" && <IqbalDarkTemplate content={content} setContent={setContent} textColor={textColor} lang={language} />}
             {template === "iqbal-modern" && <IqbalModernTemplate content={content} setContent={setContent} textColor={textColor} lang={language} />}
             {template === "iqbal-hospital" && <IqbalHospitalTemplate content={content} setContent={setContent} textColor={textColor} lang={language} />}
           </div>
         </div>
-        <div className="col-span-12 lg:col-span-4 space-y-6">
+        <div className="col-span-12 lg:col-span-4 space-y-4 md:space-y-6">
           <AILetterAssistant onDraftGenerated={(draft) => setContent(`<div>${draft.replace(/\n/g, '</div><div>')}</div>`)} />
-          <Card className="border-none ring-1 ring-border shadow-sm hidden lg:block">
+          <Card className="border-none ring-1 ring-border shadow-sm">
             <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-primary"><Users className="h-4 w-4" />Linked Patient</CardTitle></CardHeader>
-            <CardContent className="space-y-4 p-4 pt-2 text-xs">
+            <CardContent className="space-y-3 p-4 pt-2 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-bold">Alice Thompson</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">ID</span><span className="font-bold">#88219</span></div>
               <Separator />

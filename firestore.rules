@@ -83,13 +83,13 @@ service cloud.firestore {
      * @description User profile management.
      * @path /store_users/{userId}
      * @allow (get) User can read own profile; (list) System admin only.
-     * @deny (create) Only via secure backend/Admin; (update) Partial update for self (e.g., lastLogin).
+     * @allow (create) User can create their own profile; (update) Partial update for self (e.g., lastLogin).
      * @principle Strict user-ownership and admin oversight.
      */
     match /store_users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
       allow list: if isSystemAdmin();
-      allow create: if isSystemAdmin(); 
+      allow create: if isSignedIn() && request.auth.uid == userId; 
       allow update: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
       allow delete: if isSystemAdmin();
     }
