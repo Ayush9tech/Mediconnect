@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -32,85 +31,35 @@ import {
   LayoutDashboard, Users, FileText, Calendar, BookOpen,
   UserPlus, History, Settings,
   Info, LifeBuoy, User, Maximize, Inbox, Menu,
-  ChevronLeft, Home, Sun, Moon, Pill, BarChart3, Package, ShoppingCart, ChevronDown
+  ChevronLeft, ChevronRight, Home, Sun, Moon, Pill, BarChart3, Package, ShoppingCart, ChevronDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { logOut } from "@/lib/auth";
-import { useUser } from "@/firebase/provider";
-import { getDoctorProfile, saveDoctorProfile } from "@/lib/auth";
 
 export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doctor" }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const { user } = useUser();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
-  const [doctorName, setDoctorName] = useState("Doctor");
 
   const isDashboard = pathname === "/dashboard";
   const isLogin = pathname === "/";
 
   useEffect(() => {
     setMounted(true);
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    const initialTheme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    setTheme(initialTheme);
+    if (initialTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
-    const loadThemeAndProfile = async () => {
-      if (user) {
-        try {
-          const profile = await getDoctorProfile(user.uid);
-          if (profile) {
-            setDoctorName(profile.name);
-
-            // Apply theme from profile
-            if (profile.theme) {
-              if (profile.theme === 'system') {
-                const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-                setTheme(systemTheme);
-                if (systemTheme === "dark") {
-                  document.documentElement.classList.add("dark");
-                } else {
-                  document.documentElement.classList.remove("dark");
-                }
-              } else {
-                setTheme(profile.theme);
-                if (profile.theme === "dark") {
-                  document.documentElement.classList.add("dark");
-                } else {
-                  document.documentElement.classList.remove("dark");
-                }
-              }
-              return; // Don't load from localStorage if profile has theme
-            }
-          }
-        } catch (error) {
-          console.error("Error loading profile for theme:", error);
-          // Try to get from localStorage as fallback
-          const STORAGE_KEY = 'mediconnect_doctor_profiles';
-          const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-          const localProfile = profiles[user.uid];
-          if (localProfile) {
-            setDoctorName(localProfile.name);
-          }
-        }
-      }
-
-      // Fallback to localStorage or system preference
-      const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-      const initialTheme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-      setTheme(initialTheme);
-      if (initialTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-
-    loadThemeAndProfile();
-  }, [user]);
-
-  const toggleTheme = async (e: React.MouseEvent) => {
+  const toggleTheme = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const newTheme = theme === "light" ? "dark" : "light";
@@ -120,15 +69,6 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
-    }
-
-    // Save theme preference to user profile
-    if (user) {
-      try {
-        await saveDoctorProfile(user.uid, { theme: newTheme });
-      } catch (error) {
-        console.error("Error saving theme preference:", error);
-      }
     }
   };
 
@@ -166,23 +106,6 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logOut();
-      toast({
-        title: "Signed out successfully",
-        description: "See you next time!",
-      });
-      router.push("/");
-    } catch (error: any) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="w-full bg-card border-b px-4 py-2 sticky top-0 z-50 flex items-center justify-between print:hidden shadow-sm">
       <div className="flex items-center gap-1 md:gap-3">
@@ -214,37 +137,52 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
                 <MobileNavItem icon={History} label="Audit Log" href="/shared/history" active={pathname === "/shared/history"} />
                 <MobileNavItem icon={Settings} label="Settings" href="/settings" active={pathname === "/settings"} />
                 <div className="h-px bg-border my-2" />
-                <MobileNavItem icon={LogOut} label="Sign Out" onClick={handleLogout} className="text-destructive" />
+                <MobileNavItem icon={LogOut} label="Sign Out" href="/" className="text-destructive" />
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
-        {/* Global Navigation Actions */}
-        <div className="flex items-center gap-1">
-          {!isDashboard && !isLogin && (
+        {/* Global Navigation Actions - Minimized & Hideable */}
+        <div className="flex items-center gap-1 group/nav min-w-[8px] h-9">
+          <div className="flex items-center gap-1 opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300">
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => router.back()} 
-              className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors"
-              title="Go Back"
+              asChild
+              className={`h-7 w-7 hover:bg-primary/10 hover:text-primary transition-colors ${isDashboard ? 'text-primary bg-primary/10' : ''}`}
+              title="Go to Dashboard"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <Link href="/dashboard">
+                <Home className="h-4 w-4" />
+              </Link>
             </Button>
-          )}
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            asChild
-            className={`h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors ${isDashboard ? 'text-primary bg-primary/10' : ''}`}
-            title="Go to Dashboard"
-          >
-            <Link href="/dashboard">
-              <Home className="h-5 w-5" />
-            </Link>
-          </Button>
+
+            {/* Intuitive Pill Navigation */}
+            <div className="flex items-center border border-border rounded-full p-0.5 bg-muted/30">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => router.back()} 
+                disabled={isLogin}
+                className="h-6 w-6 rounded-full hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+                title="Go Back"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <div className="w-[1px] h-3 bg-border mx-0.5" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => router.forward()} 
+                disabled={isLogin}
+                className="h-6 w-6 rounded-full hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+                title="Go Forward"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
         </div>
 
         <Link 
@@ -400,10 +338,10 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
               className="flex items-center gap-0 text-sm text-muted-foreground hover:text-primary transition-all outline-none rounded-full p-1 group h-auto border border-primary/10 hover:border-primary/30 hover:bg-primary/5"
             >
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0">
-                {doctorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                JV
               </div>
               <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 group-hover:ml-2 group-hover:mr-2 transition-all duration-500 ease-in-out font-medium whitespace-nowrap">
-                {doctorName}
+                Dr. Julian Vane
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -426,8 +364,8 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
               <Link href="/settings"><Settings className="mr-2 h-4 w-4" /> Preferences</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
+            <DropdownMenuItem asChild className="text-destructive">
+              <Link href="/"><LogOut className="mr-2 h-4 w-4" /> Sign Out</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -436,25 +374,17 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
   );
 }
 
-function MobileNavItem({ icon: Icon, label, href, onClick, className, active }: any) {
+function MobileNavItem({ icon: Icon, label, href, className, active }: any) {
   return (
     <Button 
       variant={active ? "secondary" : "ghost"}
-      asChild={!!href}
-      onClick={onClick}
+      asChild
       className={`w-full justify-start text-base font-medium h-12 ${className} ${active ? 'text-primary bg-primary/10' : ''}`} 
     >
-      {href ? (
-        <Link href={href}>
-          <Icon className={`mr-3 h-5 w-5 ${active ? 'text-primary' : ''}`} />
-          {label}
-        </Link>
-      ) : (
-        <div className="flex items-center">
-          <Icon className={`mr-3 h-5 w-5 ${active ? 'text-primary' : ''}`} />
-          {label}
-        </div>
-      )}
+      <Link href={href}>
+        <Icon className={`mr-3 h-5 w-5 ${active ? 'text-primary' : ''}`} />
+        {label}
+      </Link>
     </Button>
   );
 }

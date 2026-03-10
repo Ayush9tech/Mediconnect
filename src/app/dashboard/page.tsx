@@ -1,130 +1,65 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { MediMenuBar } from "@/components/layout/MediMenuBar";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Share2, Calendar as CalendarIcon, ArrowUpRight, CheckCircle2, User } from "lucide-react";
+import { FileText, Users, Share2, Calendar as CalendarIcon, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useUser } from "@/firebase/provider";
-import { getDoctorProfile } from "@/lib/auth";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user } = useUser();
-  const [doctorName, setDoctorName] = useState("Doctor");
-  const [profileComplete, setProfileComplete] = useState(false);
-  const [letterCount, setLetterCount] = useState(0);
-  const [patientCount, setPatientCount] = useState(0);
-  const [sharedCount, setSharedCount] = useState(0);
-  const [activities, setActivities] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (user) {
-      getDoctorProfile(user.uid).then(profile => {
-        if (profile) {
-          setDoctorName(profile.name);
-          setProfileComplete(profile.profileComplete || false);
-          setLetterCount(profile.letterCount || 0);
-          setPatientCount(profile.patientCount || 0);
-          setSharedCount(profile.sharedCount || 0);
-          setActivities(profile.activities || []);
-        }
-      }).catch(error => {
-        console.error("Error loading doctor profile in dashboard:", error);
-        // Try to get from localStorage as fallback
-        const STORAGE_KEY = 'mediconnect_doctor_profiles';
-        const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        const localProfile = profiles[user.uid];
-        if (localProfile) {
-          setDoctorName(localProfile.name);
-          setProfileComplete(localProfile.profileComplete || false);
-          setLetterCount(localProfile.letterCount || 0);
-          setPatientCount(localProfile.patientCount || 0);
-          setSharedCount(localProfile.sharedCount || 0);
-          setActivities(localProfile.activities || []);
-        }
-      });
-    }
-  }, [user]);
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen flex flex-col bg-background">
-        <MediMenuBar />
-        <main className="flex-1 p-3 md:p-4 lg:p-6 max-w-7xl mx-auto w-full space-y-4 -mt-2">
-          {/* Profile Completion Banner */}
-          {!profileComplete && (
-            <Card className="border-amber-200 bg-amber-50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-full">
-                      <User className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-amber-800">Complete Your Profile</h3>
-                      <p className="text-sm text-amber-700">Add your professional details to personalize your MediConnect experience.</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => router.push("/settings")}
-                    className="bg-amber-600 hover:bg-amber-700"
-                  >
-                    Complete Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <h2 className="text-lg md:text-xl font-headline font-bold text-primary leading-tight">Welcome back, {doctorName}</h2>
-              <p className="text-[9px] md:text-[10px] text-muted-foreground leading-tight">Here is what's happening in your clinic today.</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button asChild className="bg-primary hover:bg-primary/90 shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">
-                <Link href="/letters/new">New Letter</Link>
-              </Button>
-              <Button variant="outline" className="shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">Schedule Follow-up</Button>
-            </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <MediMenuBar />
+      <main className="flex-1 p-3 md:p-4 lg:p-6 max-w-7xl mx-auto w-full space-y-4 -mt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <h2 className="text-lg md:text-xl font-headline font-bold text-primary leading-tight">Welcome back, Dr. Vane</h2>
+            <p className="text-[9px] md:text-[10px] text-muted-foreground leading-tight">Here is what's happening in your clinic today.</p>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild className="bg-primary hover:bg-primary/90 shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">
+              <Link href="/letters/new">New Letter</Link>
+            </Button>
+            <Button variant="outline" className="shadow-sm h-8 text-[11px] w-full sm:w-auto px-4">Schedule Follow-up</Button>
+          </div>
+        </div>
 
         {/* Liquid Glass Stats Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard 
             title="My Letters" 
-            value={letterCount.toString()} 
+            value="128" 
             icon={FileText} 
-            trend={letterCount === 0 ? "Create your first letter" : `+${Math.floor(Math.random() * 4) + 1} this week`} 
+            trend="+4 this week" 
             onClick={() => router.push("/letters")}
           />
           <StatCard 
             title="Patients" 
-            value={patientCount.toString()} 
+            value="542" 
             icon={Users} 
-            trend={patientCount === 0 ? "Add your first patient" : `+${Math.floor(Math.random() * 12) + 1} this month`} 
+            trend="+12 this month" 
             onClick={() => router.push("/patients")}
           />
           <StatCard 
             title="Received" 
-            value={sharedCount.toString()} 
+            value="12" 
             icon={Share2} 
-            trend={sharedCount === 0 ? "No new alerts" : `${sharedCount} new alerts`} 
+            trend="3 new alerts" 
             onClick={() => router.push("/shared/inbox")}
           />
           <StatCard 
             title="Next Appointment" 
-            value={patientCount > 0 ? "2:30 PM" : "N/A"} 
+            value="2:30 PM" 
             icon={CalendarIcon} 
-            trend={patientCount > 0 ? "Alice Thompson" : "No appointments"} 
+            trend="Alice Thompson" 
             onClick={() => router.push("/calendar")}
           />
         </div>
@@ -193,7 +128,6 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
-    </ProtectedRoute>
   );
 }
 

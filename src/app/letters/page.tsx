@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MediMenuBar } from "@/components/layout/MediMenuBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,45 +11,21 @@ import { Search, Plus, FileText, MoreVertical, Filter, Download } from "lucide-r
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useUser } from "@/firebase/provider";
-import { getDoctorProfile, trackActivity } from "@/lib/auth";
+
+const LETTERS = [
+  { id: "L001", patient: "Alice Thompson", subject: "Post-op Follow-up", date: "2025-02-12", status: "Finalized", doctor: "Dr. Julian Vane" },
+  { id: "L002", patient: "Robert Miller", subject: "Cardiology Referral", date: "2025-02-10", status: "Draft", doctor: "Dr. Julian Vane" },
+  { id: "L003", patient: "Sarah Jenkins", subject: "Dermatology Consultation", date: "2025-02-05", status: "Shared", doctor: "Dr. Smith" },
+  { id: "L004", patient: "Michael Chen", subject: "Neurology Update", date: "2025-02-14", status: "Finalized", doctor: "Dr. Julian Vane" },
+];
 
 export default function LettersPage() {
-  const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
-  const [letters, setLetters] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      getDoctorProfile(user.uid).then(profile => {
-        if (profile) {
-          // Load letters from profile metadata or use defaults
-          const STORAGE_KEY = 'mediconnect_letters';
-          const storageLetters = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-          const userLetters = storageLetters.filter((l: any) => l.doctorId === user.uid);
-          setLetters(userLetters.length > 0 ? userLetters : []);
-        }
-      }).catch(error => {
-        console.error("Error loading profile:", error);
-        // Try loading from localStorage
-        const STORAGE_KEY = 'mediconnect_letters';
-        const storageLetters = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const userLetters = storageLetters.filter((l: any) => l.doctorId === user?.uid);
-        setLetters(userLetters);
-      });
-    }
-  }, [user]);
-
-  const filteredLetters = letters.filter(l => 
+  const filteredLetters = LETTERS.filter(l => 
     l.patient.toLowerCase().includes(searchTerm.toLowerCase()) || 
     l.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleCreateNewLetter = async () => {
-    if (user) {
-      await trackActivity(user.uid, 'create-letter', `New consultation letter created`, 'Started creating a new consultation letter');
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -60,7 +36,7 @@ export default function LettersPage() {
             <h2 className="text-3xl font-headline font-bold text-primary">My Consultation Letters</h2>
             <p className="text-muted-foreground">Access and manage your drafted and finalized clinical letters.</p>
           </div>
-          <Button asChild className="bg-primary" onClick={handleCreateNewLetter}>
+          <Button asChild className="bg-primary">
             <Link href="/letters/new"><Plus className="mr-2 h-4 w-4" /> Create New Letter</Link>
           </Button>
         </div>
@@ -86,66 +62,49 @@ export default function LettersPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {filteredLetters.length === 0 ? (
-              <div className="p-12 text-center space-y-3">
-                <div className="flex justify-center">
-                  <div className="p-4 rounded-lg bg-primary/10">
-                    <FileText className="h-8 w-8 text-primary/40" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground">No letters yet</p>
-                  <p className="text-xs text-muted-foreground/70">Create your first consultation letter to get started</p>
-                </div>
-                <Button asChild className="mt-4">
-                  <Link href="/letters/new"><Plus className="mr-2 h-4 w-4" /> Create New Letter</Link>
-                </Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ref ID</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ref ID</TableHead>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLetters.map((letter) => (
+                  <TableRow key={letter.id} className="group">
+                    <TableCell className="font-mono text-xs font-bold text-primary">{letter.id}</TableCell>
+                    <TableCell className="font-medium">{letter.patient}</TableCell>
+                    <TableCell>{letter.subject}</TableCell>
+                    <TableCell>{letter.date}</TableCell>
+                    <TableCell>
+                      <Badge variant={letter.status === "Draft" ? "secondary" : "default"} className={letter.status === "Shared" ? "bg-accent" : ""}>
+                        {letter.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" /> View/Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="flex items-center gap-2">
+                            <Download className="h-4 w-4" /> Export PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-primary font-medium">Share Record</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLetters.map((letter) => (
-                    <TableRow key={letter.id} className="group">
-                      <TableCell className="font-mono text-xs font-bold text-primary">{letter.id}</TableCell>
-                      <TableCell className="font-medium">{letter.patient}</TableCell>
-                      <TableCell>{letter.subject}</TableCell>
-                      <TableCell>{letter.date}</TableCell>
-                      <TableCell>
-                        <Badge variant={letter.status === "Draft" ? "secondary" : "default"} className={letter.status === "Shared" ? "bg-accent" : ""}>
-                          {letter.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="flex items-center gap-2">
-                              <FileText className="h-4 w-4" /> View/Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="flex items-center gap-2">
-                              <Download className="h-4 w-4" /> Export PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-primary font-medium">Share Record</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </main>

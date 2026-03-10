@@ -1,9 +1,215 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow all operations for development
-    match /{document=**} {
-      allow read, write: if true;
+
+    /**
+     * HOMEOPATHIC MEDICAL STORE MANAGEMENT SYSTEM - SECURITY RULES
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset implements a multi-tenant, role-based access control (RBAC) model 
+     * centered around the "Store" entity. It balances strict authorization for store-specific 
+     * data with global accessibility for master catalogs (Medicines and Categories).
+     *
+     * DATA STRUCTURE:
+     * - System-wide Admins: Defined in the top-level /system_admins collection.
+     * - User Profiles: Managed in /store_users, defining a user's role (ADMIN/STAFF) and their storeId.
+     * - Global Catalog: /categories and /medicines are shared across all stores.
+     * - Store Scoping: All transactional data (Suppliers, Batches, Invoices, Orders) are nested 
+     *   under /stores/{storeId} to ensure strict data isolation between physical locations.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Multi-Tenancy: Users can only access data belonging to the storeId assigned to their profile.
+     * 2. Denormalization for Performance: storeId and role are denormalized onto the user profile 
+     *    to allow for a single get() call to authorize all subsequent store-specific requests.
+     * 3. Role-Based Permissions: 'ADMIN' users within a store have destructive (delete) and 
+     *    configurative privileges, while 'STAFF' are limited to operational tasks (sales, stock).
+     * 4. Relational Integrity: On creation of store-scoped data, the rules enforce that the 
+     *    internal storeId field matches the document's path.
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the user is a system-wide administrator. */
+    function isSystemAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/system_admins/$(request.auth.uid));
+    }
+
+    /** @description Retrieves the StoreUser profile for the authenticated user. */
+    function getUserData() {
+      return get(/databases/$(database)/documents/store_users/$(request.auth.uid)).data;
+    }
+
+    /** @description Checks if the user belongs to a specific store. */
+    function belongsToStore(storeId) {
+      return isSignedIn() && (isSystemAdmin() || getUserData().storeId == storeId);
+    }
+
+    /** @description Checks if the user is an ADMIN for a specific store. */
+    function isStoreAdmin(storeId) {
+      return isSignedIn() && (isSystemAdmin() || (getUserData().storeId == storeId && getUserData().role == 'ADMIN'));
+    }
+
+    /** @description Checks if the user is STAFF or ADMIN for a specific store. */
+    function isStoreStaff(storeId) {
+      return isSignedIn() && (isSystemAdmin() || (getUserData().storeId == storeId && (getUserData().role == 'STAFF' || getUserData().role == 'ADMIN')));
+    }
+
+    /** @description Ensures a document exists and the user has admin/owner rights. */
+    function isExistingStoreAdmin(storeId) {
+      return resource != null && isStoreAdmin(storeId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description System admin marker collection.
+     * @path /system_admins/{userId}
+     * @allow (get) Signed in users can check admin status.
+     * @deny (write) No client-side writes; managed via admin SDK/Console.
+     * @principle Privileged access control marker.
+     */
+    match /system_admins/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSystemAdmin();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description User profile management.
+     * @path /store_users/{userId}
+     * @allow (get) User can read own profile; (list) System admin only.
+     * @deny (create) Only via secure backend/Admin; (update) Partial update for self (e.g., lastLogin).
+     * @principle Strict user-ownership and admin oversight.
+     */
+    match /store_users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
+      allow list: if isSystemAdmin();
+      allow create: if isSystemAdmin(); 
+      allow update: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
+      allow delete: if isSystemAdmin();
+    }
+
+    /**
+     * @description Store metadata.
+     * @path /stores/{storeId}
+     * @allow (read) Users belonging to the store.
+     * @deny (write) Only system admins can create or delete stores.
+     * @principle Store isolation and multi-tenancy.
+     */
+    match /stores/{storeId} {
+      allow get, list: if belongsToStore(storeId);
+      allow update: if isStoreAdmin(storeId);
+      allow create, delete: if isSystemAdmin();
+    }
+
+    /**
+     * @description Global medicine categories.
+     * @path /categories/{categoryId}
+     * @allow (read) All signed-in staff.
+     * @deny (write) Limited to system admins or store admins.
+     * @principle Global master data with restricted writes.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSystemAdmin() || (isSignedIn() && getUserData().role == 'ADMIN');
+    }
+
+    /**
+     * @description Global medicine product catalog.
+     * @path /medicines/{medicineId}
+     * @allow (read) All signed-in staff.
+     * @deny (write) Limited to system admins or store admins.
+     * @principle Global master data with restricted writes.
+     */
+    match /medicines/{medicineId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSystemAdmin() || (isSignedIn() && getUserData().role == 'ADMIN');
+    }
+
+    /**
+     * @description Store-specific suppliers.
+     * @path /stores/{storeId}/suppliers/{supplierId}
+     * @allow (create, update) Any staff in the store.
+     * @deny (delete) Only store admins.
+     * @principle Store-scoped operational data management.
+     */
+    match /stores/{storeId}/suppliers/{supplierId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create, update: if isStoreStaff(storeId);
+      allow delete: if isExistingStoreAdmin(storeId);
+    }
+
+    /**
+     * @description Store-specific medicine batches (inventory).
+     * @path /stores/{storeId}/batches/{batchId}
+     * @allow (create, update) Any staff in the store.
+     * @deny (write) If storeId in data doesn't match path.
+     * @principle Inventory tracking with path-to-data consistency.
+     */
+    match /stores/{storeId}/batches/{batchId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update: if isStoreStaff(storeId) && request.resource.data.storeId == resource.data.storeId;
+      allow delete: if isExistingStoreAdmin(storeId);
+    }
+
+    /**
+     * @description Store purchase orders.
+     * @path /stores/{storeId}/purchaseOrders/{purchaseOrderId}
+     * @allow (create) Any staff in store; (delete) Store Admin.
+     * @deny (update) If storeId or orderedByUserId is changed.
+     * @principle Relational integrity and auditable ordering.
+     */
+    match /stores/{storeId}/purchaseOrders/{purchaseOrderId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update: if isStoreStaff(storeId) && request.resource.data.storeId == resource.data.storeId;
+      allow delete: if isExistingStoreAdmin(storeId);
+
+      // Subcollection for line items
+      match /items/{itemId} {
+        allow get, list: if belongsToStore(storeId);
+        allow create, update: if isStoreStaff(storeId);
+        allow delete: if isExistingStoreAdmin(storeId);
+      }
+    }
+
+    /**
+     * @description Sales transactions and invoices.
+     * @path /stores/{storeId}/salesInvoices/{salesInvoiceId}
+     * @allow (create) Any staff in store.
+     * @deny (update, delete) Restricted to Admins only for corrections/refunds.
+     * @principle Immutability of financial records for standard staff.
+     */
+    match /stores/{storeId}/salesInvoices/{salesInvoiceId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update, delete: if isExistingStoreAdmin(storeId);
+
+      // Subcollection for line items
+      match /items/{itemId} {
+        allow get, list: if belongsToStore(storeId);
+        allow create: if isStoreStaff(storeId);
+        allow update, delete: if isExistingStoreAdmin(storeId);
+      }
+    }
+
+    /**
+     * @description Stock movement logs (audit trail).
+     * @path /stores/{storeId}/stockTransactions/{stockTransactionId}
+     * @allow (create) Any staff in store.
+     * @deny (update, delete) Absolutely restricted to maintain audit integrity.
+     * @principle Immutable ledger for inventory movements.
+     */
+    match /stores/{storeId}/stockTransactions/{stockTransactionId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update, delete: if false; 
     }
   }
 }

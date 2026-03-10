@@ -1,14 +1,15 @@
+
 {
   "entities": {
     "StoreUser": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "StoreUser",
       "type": "object",
-      "description": "Represents a user account within the Homeopathic Medical Store management system, with distinct roles and access permissions. Passwords and other authentication data are managed by an external system.",
+      "description": "Represents a medical professional or staff member within the MediConnect Hub. Profiles include clinical credentials and contact information.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the StoreUser entity."
+          "description": "Unique identifier (Firebase Auth UID)."
         },
         "username": {
           "type": "string",
@@ -16,24 +17,44 @@
         },
         "email": {
           "type": "string",
-          "description": "Email address of the user.",
+          "description": "Professional email address.",
           "format": "email"
         },
         "firstName": {
           "type": "string",
-          "description": "First name of the user."
+          "description": "First name."
         },
         "lastName": {
           "type": "string",
-          "description": "Last name of the user."
+          "description": "Last name."
+        },
+        "specialization": {
+          "type": "string",
+          "description": "Medical area of expertise (e.g., Cardiology, General Practice)."
+        },
+        "qualification": {
+          "type": "string",
+          "description": "Medical degrees and certifications (e.g., MBBS, MD)."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Professional contact number."
+        },
+        "address": {
+          "type": "string",
+          "description": "Clinical or hospital address."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Brief professional background."
         },
         "role": {
           "type": "string",
-          "description": "The role of the user within the store system (e.g., 'ADMIN', 'STAFF')."
+          "description": "Role within the system (e.g., 'doctor', 'admin')."
         },
         "storeId": {
           "type": "string",
-          "description": "Reference to the Store entity this user is associated with. (Relationship: Store 1:N StoreUser)"
+          "description": "Association with a specific clinical store or practice."
         },
         "lastLogin": {
           "type": "string",
@@ -43,12 +64,10 @@
       },
       "required": [
         "id",
-        "username",
         "email",
         "firstName",
         "lastName",
-        "role",
-        "storeId"
+        "role"
       ]
     },
     "Store": {

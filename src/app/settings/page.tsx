@@ -10,115 +10,66 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { User, Settings, ShieldCheck, Bell, Smartphone, Monitor, Save, Loader2 } from "lucide-react";
+import { User, Settings, ShieldCheck, Bell, Smartphone, Monitor, Loader2, Save, Award, Phone, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/firebase/provider";
-import { getDoctorProfile, saveDoctorProfile, DoctorProfile } from "@/lib/auth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useUser, useFirestore } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function SettingsPage() {
-  return (
-    <ProtectedRoute>
-      <SettingsContent />
-    </ProtectedRoute>
-  );
-}
-
-function SettingsContent() {
   const { toast } = useToast();
-  const { user } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Partial<DoctorProfile>>({});
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const firestore = useFirestore();
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load profile data on component mount
   useEffect(() => {
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
-
-  const loadProfile = async () => {
-    if (!user) return;
-
-    try {
-      const profileData = await getDoctorProfile(user.uid);
-      if (profileData) {
-        setProfile(profileData);
-      } else {
-        // Initialize with basic info
-        setProfile({
-          name: user.displayName || '',
-          email: user.email || '',
-          notifications: {
-            email: true,
-            sms: false,
-            push: true,
-          },
-        });
+    async function fetchProfile() {
+      if (user) {
+        try {
+          const docRef = doc(firestore, "store_users", user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProfile(docSnap.data());
+          }
+        } catch (err) {
+          console.error("Error fetching profile:", err);
+        } finally {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile data.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+    fetchProfile();
+  }, [user, firestore]);
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-
-    setSaving(true);
-    try {
-      await saveDoctorProfile(user.uid, profile);
+  const handleSave = () => {
+    if (!user || !profile) return;
+    
+    setIsSaving(true);
+    const docRef = doc(firestore, "store_users", user.uid);
+    
+    updateDocumentNonBlocking(docRef, profile);
+    
+    setTimeout(() => {
+      setIsSaving(false);
       toast({
-        title: "Profile Updated",
-        description: "Your profile information has been saved successfully.",
+        title: "Clinical Profile Updated",
+        description: "Your professional data has been securely saved to the Hub.",
       });
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
+    }, 800);
   };
 
-  const handleInputChange = (field: keyof DoctorProfile, value: any) => {
-    setProfile(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const updateField = (field: string, value: string) => {
+    setProfile((prev: any) => ({ ...prev, [field]: value }));
   };
 
-  const handleNotificationChange = (type: 'email' | 'sms' | 'push', value: boolean) => {
-    setProfile(prev => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [type]: value,
-      },
-    }));
-  };
-
-  if (loading) {
+  if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <MediMenuBar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading your settings...</p>
-          </div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
       </div>
     );
@@ -129,404 +80,136 @@ function SettingsContent() {
       <MediMenuBar />
       <main className="flex-1 p-6 max-w-5xl mx-auto w-full space-y-6">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-primary">Settings & Preferences</h2>
-          <p className="text-muted-foreground">Manage your clinical account, notifications, and security settings.</p>
+          <h2 className="text-3xl font-headline font-bold text-primary">Settings & Professional Identity</h2>
+          <p className="text-muted-foreground">Manage your clinical credentials, contact details, and platform preferences.</p>
         </div>
 
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 md:w-[400px] mb-8">
+            <TabsTrigger value="account">Clinical Profile</TabsTrigger>
+            <TabsTrigger value="preferences">App Config</TabsTrigger>
+            <TabsTrigger value="security">Access Security</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="account" className="space-y-4 pt-4">
+          <TabsContent value="account" className="space-y-4 pt-0">
             <Card className="border-none ring-1 ring-border shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" /> Profile Information
+                  <User className="h-5 w-5 text-primary" /> Professional Credentials
                 </CardTitle>
-                <CardDescription>Update your medical professional profile details.</CardDescription>
+                <CardDescription>Update your medical qualifications and clinical area of expertise.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Basic Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input
-                        id="name"
-                        value={profile.name || ''}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="Dr. John Smith"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Medical Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profile.email || ''}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        placeholder="doctor@clinic.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={profile.phone || ''}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select value={profile.gender || ''} onValueChange={(value) => handleInputChange('gender', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">First Name</Label>
+                    <Input id="firstName" value={profile?.firstName || ""} onChange={(e) => updateField("firstName", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Last Name</Label>
+                    <Input id="lastName" value={profile?.lastName || ""} onChange={(e) => updateField("lastName", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Medical Email</Label>
+                    <Input id="email" value={profile?.email || ""} readOnly className="bg-muted/50" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="specialty" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Award className="h-3 w-3" /> Primary Specialty</Label>
+                    <Input id="specialty" value={profile?.specialization || ""} onChange={(e) => updateField("specialization", e.target.value)} placeholder="e.g. General Physician" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qualification" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Award className="h-3 w-3" /> Qualification</Label>
+                    <Input id="qualification" value={profile?.qualification || ""} onChange={(e) => updateField("qualification", e.target.value)} placeholder="e.g. MBBS, MD" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Contact Phone</Label>
+                    <Input id="phone" value={profile?.phone || ""} onChange={(e) => updateField("phone", e.target.value)} />
                   </div>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" /> Clinical Address</Label>
+                  <Input id="address" value={profile?.address || ""} onChange={(e) => updateField("address", e.target.value)} />
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Professional Bio</Label>
+                  <Input id="bio" value={profile?.bio || ""} onChange={(e) => updateField("bio", e.target.value)} placeholder="Brief clinical background..." />
+                </div>
+                
                 <Separator />
-
-                {/* Professional Information */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Professional Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="specialization">Primary Specialty *</Label>
-                      <Input
-                        id="specialization"
-                        value={profile.specialization || ''}
-                        onChange={(e) => handleInputChange('specialization', e.target.value)}
-                        placeholder="e.g., Cardiology, Pediatrics"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="licenseNumber">Medical License Number</Label>
-                      <Input
-                        id="licenseNumber"
-                        value={profile.licenseNumber || ''}
-                        onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                        placeholder="MED-12345-AB"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="yearsOfExperience">Years of Experience</Label>
-                      <Input
-                        id="yearsOfExperience"
-                        type="number"
-                        value={profile.yearsOfExperience || ''}
-                        onChange={(e) => handleInputChange('yearsOfExperience', parseInt(e.target.value) || undefined)}
-                        placeholder="10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="graduationYear">Graduation Year</Label>
-                      <Input
-                        id="graduationYear"
-                        type="number"
-                        value={profile.graduationYear || ''}
-                        onChange={(e) => handleInputChange('graduationYear', parseInt(e.target.value) || undefined)}
-                        placeholder="2010"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="medicalSchool">Medical School</Label>
-                    <Input
-                      id="medicalSchool"
-                      value={profile.medicalSchool || ''}
-                      onChange={(e) => handleInputChange('medicalSchool', e.target.value)}
-                      placeholder="Harvard Medical School"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Practice Information */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Practice Information</h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="clinicName">Clinic/Hospital Name</Label>
-                    <Input
-                      id="clinicName"
-                      value={profile.clinicName || ''}
-                      onChange={(e) => handleInputChange('clinicName', e.target.value)}
-                      placeholder="City General Hospital"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="clinicAddress">Clinic Address</Label>
-                    <Textarea
-                      id="clinicAddress"
-                      value={profile.clinicAddress || ''}
-                      onChange={(e) => handleInputChange('clinicAddress', e.target.value)}
-                      placeholder="123 Medical Center Dr, City, State 12345"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="clinicPhone">Clinic Phone</Label>
-                      <Input
-                        id="clinicPhone"
-                        type="tel"
-                        value={profile.clinicPhone || ''}
-                        onChange={(e) => handleInputChange('clinicPhone', e.target.value)}
-                        placeholder="+1 (555) 987-6543"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clinicEmail">Clinic Email</Label>
-                      <Input
-                        id="clinicEmail"
-                        type="email"
-                        value={profile.clinicEmail || ''}
-                        onChange={(e) => handleInputChange('clinicEmail', e.target.value)}
-                        placeholder="info@clinic.com"
-                      />
-                    </div>
-                  </div>
-                </div>
-
+                
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Profile
-                      </>
-                    )}
+                  <Button onClick={handleSave} disabled={isSaving} className="bg-primary px-8">
+                    {isSaving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Identity Changes
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="preferences" className="space-y-4 pt-4">
+          <TabsContent value="preferences" className="space-y-4 pt-0">
             <Card className="border-none ring-1 ring-border shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-primary" /> App Preferences
+                  <Settings className="h-5 w-5 text-primary" /> Application Workflow
                 </CardTitle>
-                <CardDescription>Configure how you interact with MediConnect Hub.</CardDescription>
+                <CardDescription>Configure notifications and display modes.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Notifications</h4>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Bell className="h-4 w-4" /> Email Notifications
-                      </div>
-                      <p className="text-sm text-muted-foreground">Receive alerts when letters are shared with you.</p>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Bell className="h-4 w-4" /> Email Alerts
                     </div>
-                    <Switch
-                      checked={profile.notifications?.email ?? true}
-                      onCheckedChange={(checked) => handleNotificationChange('email', checked)}
-                    />
+                    <p className="text-sm text-muted-foreground">Get notified when colleagues share clinical records.</p>
                   </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Smartphone className="h-4 w-4" /> Push Notifications
-                      </div>
-                      <p className="text-sm text-muted-foreground">Mobile alerts for urgent clinical updates.</p>
-                    </div>
-                    <Switch
-                      checked={profile.notifications?.push ?? true}
-                      onCheckedChange={(checked) => handleNotificationChange('push', checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Bell className="h-4 w-4" /> SMS Notifications
-                      </div>
-                      <p className="text-sm text-muted-foreground">Text message alerts for critical updates.</p>
-                    </div>
-                    <Switch
-                      checked={profile.notifications?.sms ?? false}
-                      onCheckedChange={(checked) => handleNotificationChange('sms', checked)}
-                    />
-                  </div>
+                  <Switch defaultChecked />
                 </div>
-
                 <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Appearance</h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="theme">Theme Preference</Label>
-                    <Select value={profile.theme || 'system'} onValueChange={(value) => handleInputChange('theme', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Localization</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="language">Language</Label>
-                      <Select value={profile.language || 'en'} onValueChange={(value) => handleInputChange('language', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Spanish</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
-                          <SelectItem value="de">German</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Smartphone className="h-4 w-4" /> Mobile Sync
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Select value={profile.timezone || 'UTC'} onValueChange={(value) => handleInputChange('timezone', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="UTC">UTC</SelectItem>
-                          <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                          <SelectItem value="America/Chicago">Central Time</SelectItem>
-                          <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                          <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                          <SelectItem value="Europe/London">London</SelectItem>
-                          <SelectItem value="Europe/Paris">Paris</SelectItem>
-                          <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <p className="text-sm text-muted-foreground">Enable clinical push notifications.</p>
                   </div>
+                  <Switch defaultChecked />
                 </div>
-
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Preferences
-                      </>
-                    )}
-                  </Button>
+                  <Button onClick={handleSave} className="bg-primary">Update Preferences</Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="security" className="space-y-4 pt-4">
+          <TabsContent value="security" className="space-y-4 pt-0">
             <Card className="border-none ring-1 ring-border shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-primary" /> Security Settings
+                  <ShieldCheck className="h-5 w-5 text-primary" /> HIPAA Access Security
                 </CardTitle>
-                <CardDescription>Manage password and clinical authentication factors.</CardDescription>
+                <CardDescription>Manage credentials and multi-factor authentication.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 bg-muted/20 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <ShieldCheck className="h-5 w-5 text-green-600" />
-                    <p className="font-semibold text-green-700">Account Security Status</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Your account is secured with Firebase Authentication. Password changes must be done through your authentication provider.
-                  </p>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="current-pass" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Current Password</Label>
+                  <Input id="current-pass" type="password" />
                 </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-pass" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Password</Label>
+                    <Input id="new-pass" type="password" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-pass" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Confirm Password</Label>
+                    <Input id="confirm-pass" type="password" />
+                  </div>
+                </div>
                 <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Account Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Account Created</Label>
-                      <p className="text-sm text-muted-foreground p-2 bg-muted/50 rounded">
-                        {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Not available'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Last Updated</Label>
-                      <p className="text-sm text-muted-foreground p-2 bg-muted/50 rounded">
-                        {profile.updatedAt ? new Date(profile.updatedAt).toLocaleDateString() : 'Not available'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                  <div className="space-y-0.5">
-                    <p className="font-bold">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your clinical account.</p>
-                  </div>
-                  <Button variant="outline" size="sm" disabled>
-                    Coming Soon
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                  <div className="space-y-0.5">
-                    <p className="font-bold">Session Management</p>
-                    <p className="text-sm text-muted-foreground">View and manage your active sessions.</p>
-                  </div>
-                  <Button variant="outline" size="sm" disabled>
-                    Coming Soon
-                  </Button>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground text-red-600">Danger Zone</h4>
-                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="font-bold text-red-700">Delete Account</p>
-                        <p className="text-sm text-red-600">Permanently delete your account and all associated data.</p>
-                      </div>
-                      <Button variant="destructive" size="sm" disabled>
-                        Delete Account
-                      </Button>
-                    </div>
-                  </div>
+                <div className="flex justify-end">
+                  <Button variant="destructive">Update Security Access</Button>
                 </div>
               </CardContent>
             </Card>
