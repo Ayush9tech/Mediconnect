@@ -88,16 +88,19 @@ export default function MedicineInventoryPage() {
 
   const NavigationControls = () => (
     <div className="flex items-center gap-1 group/nav min-w-[8px] h-10">
+      {/* Home Button - Always Visible */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => router.push("/dashboard")}
+        className="text-white hover:bg-white/10 h-7 w-7"
+        title="Home"
+      >
+        <Home className="h-4 w-4" />
+      </Button>
+
+      {/* Back/Forward - Auto-hide on hover group */}
       <div className="flex items-center gap-1.5 opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => router.push("/dashboard")}
-          className="text-white hover:bg-white/10 h-7 w-7"
-          title="Home"
-        >
-          <Home className="h-4 w-4" />
-        </Button>
         <div className="flex items-center border border-white/20 rounded-full p-0.5 bg-black/20">
           <Button 
             variant="ghost" 
@@ -120,6 +123,8 @@ export default function MedicineInventoryPage() {
           </Button>
         </div>
       </div>
+      
+      {/* Logo */}
       <div className="h-9 w-9 bg-white rounded-md flex items-center justify-center p-1 overflow-hidden ml-2 shadow-inner">
         <img src="https://picsum.photos/seed/med-logo/100/100" alt="Logo" className="object-contain" />
       </div>
@@ -262,7 +267,7 @@ export default function MedicineInventoryPage() {
                   <span className="text-[#2D3436] font-black text-sm md:text-xl">Med</span>
                 </div>
                 
-                <div className="flex flex-wrap items-center justify-center max-w-[200px] md:max-w-lg gap-2 md:gap-4">
+                <div className="flex wrap items-center justify-center max-w-[200px] md:max-w-lg gap-2 md:gap-4">
                   <Bubble label="Toxicology" size="sm" />
                   <Bubble label="D. Pharma" size="lg" />
                   <Bubble label="M. Pharma." size="lg" />

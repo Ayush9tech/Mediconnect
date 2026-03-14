@@ -182,19 +182,21 @@ export function MediMenuBar({ userRole = "doctor" }: { userRole?: "admin" | "doc
 
         {/* Global Navigation Actions */}
         <div className="flex items-center gap-1 group/nav min-w-[8px] h-9">
-          <div className="flex items-center gap-1 opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              asChild
-              className={`h-7 w-7 hover:bg-primary/10 hover:text-primary transition-colors ${isDashboard ? 'text-primary bg-primary/10' : ''}`}
-              title="Go to Dashboard"
-            >
-              <Link href="/dashboard">
-                <Home className="h-4 w-4" />
-              </Link>
-            </Button>
+          {/* Home Button - Always Visible */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            asChild
+            className={`h-7 w-7 hover:bg-primary/10 hover:text-primary transition-colors ${isDashboard ? 'text-primary bg-primary/10' : ''}`}
+            title="Go to Dashboard"
+          >
+            <Link href="/dashboard">
+              <Home className="h-4 w-4" />
+            </Link>
+          </Button>
 
+          {/* Back/Forward - Auto-hide on hover group */}
+          <div className="flex items-center gap-1 opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300">
             <div className="flex items-center border border-border rounded-full p-0.5 bg-muted/30">
               <Button 
                 variant="ghost" 

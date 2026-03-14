@@ -60,3 +60,45 @@
     @apply font-headline;
   }
 }
+
+/* Custom Scrollbar for Liquid Glass */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.2);
+  border-radius: 20px;
+}
+
+/* Hardware Accelerated View Transitions */
+::view-transition-group(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+  outline: none;
+  z-index: 9999;
+  clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+}
+
+.dark ::view-transition-new(root),
+::view-transition-new(root) {
+  animation: circular-reveal 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: clip-path;
+}
+
+@keyframes circular-reveal {
+  from {
+    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--x, 50%) var(--y, 50%));
+  }
+}
