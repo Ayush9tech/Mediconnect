@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * HOMEOPATHIC MEDICAL STORE MANAGEMENT SYSTEM - SECURITY RULES
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset implements a multi-tenant, role-based access control (RBAC) model 
+     * centered around the "Store" entity. It balances strict authorization for store-specific 
+     * data with global accessibility for master catalogs (Medicines and Categories).
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the user is a system-wide administrator. */
+    function isSystemAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/system_admins/$(request.auth.uid));
+    }
+
+    /** @description Retrieves the StoreUser profile for the authenticated user safely. */
+    function getUserData() {
+      let path = /databases/$(database)/documents/store_users/$(request.auth.uid);
+      return exists(path) ? get(path).data : {};
+    }
+
+    /** @description Checks if the user role matches (case-insensitive). */
+    function hasRole(role) {
+      let userRole = getUserData().get('role', '');
+      return userRole.upper() == role.upper();
+    }
+
+    /** @description Checks if the user belongs to a specific store. */
+    function belongsToStore(storeId) {
+      return isSignedIn() && (isSystemAdmin() || getUserData().get('storeId', '') == storeId);
+    }
+
+    /** @description Checks if the user is an ADMIN or doctor for a specific store. */
+    function isStoreAdmin(storeId) {
+      return isSignedIn() && (
+        isSystemAdmin() || 
+        (belongsToStore(storeId) && (hasRole('ADMIN') || hasRole('doctor')))
+      );
+    }
+
+    /** @description Checks if the user is STAFF, ADMIN, or doctor for a specific store. */
+    function isStoreStaff(storeId) {
+      return isSignedIn() && (
+        isSystemAdmin() || 
+        (belongsToStore(storeId) && (hasRole('STAFF') || hasRole('ADMIN') || hasRole('doctor')))
+      );
+    }
+
+    /** @description Checks if the user is any kind of authorized medical professional. */
+    function isAuthorizedProfessional() {
+      return isSignedIn() && (isSystemAdmin() || hasRole('ADMIN') || hasRole('doctor'));
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description System admin marker collection.
+     * @path /system_admins/{userId}
+     */
+    match /system_admins/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSystemAdmin();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description User profile management.
+     * @path /store_users/{userId}
+     */
+    match /store_users/{userId} {
+      // Explicitly allow users to read their own profile without relying on complex functions
+      allow get: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
+      allow list: if isSystemAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId; 
+      allow update: if isSignedIn() && (request.auth.uid == userId || isSystemAdmin());
+      allow delete: if isSystemAdmin();
+    }
+
+    /**
+     * @description Store metadata.
+     * @path /stores/{storeId}
+     */
+    match /stores/{storeId} {
+      allow get, list: if belongsToStore(storeId);
+      allow update: if isStoreAdmin(storeId);
+      allow create, delete: if isSystemAdmin();
+    }
+
+    /**
+     * @description Global medicine categories.
+     * @path /categories/{categoryId}
+     */
+    match /categories/{categoryId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAuthorizedProfessional();
+    }
+
+    /**
+     * @description Global medicine product catalog.
+     * @path /medicines/{medicineId}
+     */
+    match /medicines/{medicineId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAuthorizedProfessional();
+    }
+
+    /**
+     * @description Store-specific suppliers.
+     * @path /stores/{storeId}/suppliers/{supplierId}
+     */
+    match /stores/{storeId}/suppliers/{supplierId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create, update: if isStoreStaff(storeId);
+      allow delete: if isStoreAdmin(storeId);
+    }
+
+    /**
+     * @description Store-specific medicine batches (inventory).
+     * @path /stores/{storeId}/batches/{batchId}
+     */
+    match /stores/{storeId}/batches/{batchId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update: if isStoreStaff(storeId) && request.resource.data.storeId == resource.data.storeId;
+      allow delete: if isStoreAdmin(storeId);
+    }
+
+    /**
+     * @description Store purchase orders.
+     * @path /stores/{storeId}/purchaseOrders/{purchaseOrderId}
+     */
+    match /stores/{storeId}/purchaseOrders/{purchaseOrderId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update: if isStoreStaff(storeId) && request.resource.data.storeId == resource.data.storeId;
+      allow delete: if isStoreAdmin(storeId);
+
+      // Subcollection for line items
+      match /items/{itemId} {
+        allow get, list: if belongsToStore(storeId);
+        allow create, update: if isStoreStaff(storeId);
+        allow delete: if isStoreAdmin(storeId);
+      }
+    }
+
+    /**
+     * @description Sales transactions and invoices.
+     * @path /stores/{storeId}/salesInvoices/{salesInvoiceId}
+     */
+    match /stores/{storeId}/salesInvoices/{salesInvoiceId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update, delete: if isStoreAdmin(storeId);
+
+      // Subcollection for line items
+      match /items/{itemId} {
+        allow get, list: if belongsToStore(storeId);
+        allow create, update: if isStoreStaff(storeId);
+        allow update, delete: if isStoreAdmin(storeId);
+      }
+    }
+
+    /**
+     * @description Stock movement logs (audit trail).
+     * @path /stores/{storeId}/stockTransactions/{stockTransactionId}
+     */
+    match /stores/{storeId}/stockTransactions/{stockTransactionId} {
+      allow get, list: if belongsToStore(storeId);
+      allow create: if isStoreStaff(storeId) && request.resource.data.storeId == storeId;
+      allow update, delete: if false; 
+    }
+  }
+}

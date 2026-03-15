@@ -1,0 +1,433 @@
+
+{
+  "entities": {
+    "StoreUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StoreUser",
+      "type": "object",
+      "description": "Represents a medical professional or staff member within the MediConnect Hub. Profiles include clinical credentials and contact information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier (Firebase Auth UID)."
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique username for login."
+        },
+        "email": {
+          "type": "string",
+          "description": "Professional email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name."
+        },
+        "specialization": {
+          "type": "string",
+          "description": "Medical area of expertise (e.g., Cardiology, General Practice)."
+        },
+        "qualification": {
+          "type": "string",
+          "description": "Medical degrees and certifications (e.g., MBBS, MD)."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Professional contact number."
+        },
+        "address": {
+          "type": "string",
+          "description": "Clinical or hospital address."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Brief professional background."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role within the system (e.g., 'doctor', 'admin')."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Association with a specific clinical store or practice."
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Timestamp of the user's last login.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "role"
+      ]
+    },
+    "Store": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Store",
+      "type": "object",
+      "description": "Represents a physical store location, enabling multi-store support for inventory and sales management.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Store entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the store."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address of the store."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the store."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address for the store.",
+          "format": "email"
+        },
+        "gstin": {
+          "type": "string",
+          "description": "Goods and Services Tax Identification Number (GSTIN) for the store, used for billing."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "gstin"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category or type of homeopathic medicine (e.g., Mother Tincture, Dilution, Bio-Chemic).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the medicine category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Medicine": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Medicine",
+      "type": "object",
+      "description": "Represents a specific homeopathic medicine product, including its general details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Medicine entity."
+        },
+        "code": {
+          "type": "string",
+          "description": "Unique ERP product code."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the homeopathic medicine."
+        },
+        "company": {
+          "type": "string",
+          "description": "Manufacturing company of the medicine."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category entity this medicine belongs to."
+        },
+        "potency": {
+          "type": "string",
+          "description": "Potency of the medicine (e.g., 30C, 200C, 1M)."
+        },
+        "barcode": {
+          "type": "string",
+          "description": "Barcode associated with the medicine for quick scanning."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description or indications for the medicine."
+        },
+        "hsnCode": {
+          "type": "string",
+          "description": "Harmonized System of Nomenclature (HSN) code for GST billing."
+        },
+        "gstRate": {
+          "type": "number",
+          "description": "Applicable GST rate."
+        },
+        "reorderLevel": {
+          "type": "number",
+          "description": "The stock quantity at which a reorder alert should be triggered."
+        },
+        "mainUnit": {
+          "type": "string"
+        },
+        "alterUnit": {
+          "type": "string"
+        },
+        "conversionValue": {
+          "type": "number"
+        },
+        "discountPercent": {
+          "type": "number"
+        },
+        "taxType": {
+          "type": "string",
+          "enum": ["INCLUSIVE", "EXCLUSIVE"]
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Schedule of drugs (e.g. H1, H)."
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "company",
+        "categoryId"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier from whom medicines are purchased.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Supplier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Name of the primary contact person at the supplier."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the supplier.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the supplier."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address of the supplier."
+        },
+        "gstin": {
+          "type": "string",
+          "description": "Goods and Services Tax Identification Number (GSTIN) of the supplier."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contactPerson",
+        "email",
+        "phone",
+        "address",
+        "gstin"
+      ]
+    },
+    "Batch": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Batch",
+      "type": "object",
+      "description": "Represents a specific manufacturing batch of a medicine, crucial for tracking individual stock, expiry, and purchase details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Batch entity."
+        },
+        "medicineId": {
+          "type": "string",
+          "description": "Reference to the Medicine entity this batch belongs to."
+        },
+        "batchNumber": {
+          "type": "string",
+          "description": "The unique batch number assigned by the manufacturer."
+        },
+        "manufacturingDate": {
+          "type": "string",
+          "description": "Date of manufacturing for this batch.",
+          "format": "date"
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "Expiry date for this batch of medicine.",
+          "format": "date"
+        },
+        "currentStock": {
+          "type": "number",
+          "description": "Current available quantity in stock for this specific batch."
+        },
+        "purchasePrice": {
+          "type": "number",
+          "description": "The unit purchase price for items in this batch."
+        },
+        "mrp": {
+          "type": "number"
+        },
+        "salesRate": {
+          "type": "number"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to the Supplier entity."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store entity."
+        }
+      },
+      "required": [
+        "id",
+        "medicineId",
+        "batchNumber",
+        "currentStock",
+        "storeId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/system_admins/{userId}",
+        "definition": {
+          "entityName": "StoreUser",
+          "schema": {
+            "$ref": "#/backend/entities/StoreUser"
+          },
+          "description": "A top-level collection to identify system-wide administrators.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the StoreUser who is a system administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/store_users/{userId}",
+        "definition": {
+          "entityName": "StoreUser",
+          "schema": {
+            "$ref": "#/backend/entities/StoreUser"
+          },
+          "description": "Stores user profiles including their role and the specific store they are associated with.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the StoreUser."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}",
+        "definition": {
+          "entityName": "Store",
+          "schema": {
+            "$ref": "#/backend/entities/Store"
+          },
+          "description": "Main collection for each physical store location.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier for a specific store."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "A global master collection for medicine categories.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for a medicine category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/medicines/{medicineId}",
+        "definition": {
+          "entityName": "Medicine",
+          "schema": {
+            "$ref": "#/backend/entities/Medicine"
+          },
+          "description": "A global master collection for homeopathic medicine details.",
+          "params": [
+            {
+              "name": "medicineId",
+              "description": "The unique identifier for a specific medicine product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stores/{storeId}/batches/{batchId}",
+        "definition": {
+          "entityName": "Batch",
+          "schema": {
+            "$ref": "#/backend/entities/Batch"
+          },
+          "description": "A subcollection under each store, detailing specific manufacturing batches of medicines currently in stock.",
+          "params": [
+            {
+              "name": "storeId",
+              "description": "The unique identifier of the store."
+            },
+            {
+              "name": "batchId",
+              "description": "The unique identifier for a specific medicine batch."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
